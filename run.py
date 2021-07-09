@@ -76,7 +76,6 @@ class EventParser():
             if fd in self.fds:
                 del(self.fds[fd])
         if scall == "read":
-            print(event)
             fd = event["syscall"]["args"]["fd"]
             if fd in self.fds:
                 f = self.fds[fd]
@@ -112,13 +111,11 @@ def run():
 
     mydir = os.path.dirname(os.path.realpath(__file__))
 
-    driver_cmd = ["{}/tau_perf".format(mydir), "-i", "-j", "-r", str(profile_data_pipe[1]), "--"]
+    driver_cmd = ["{}/perf".format(mydir), "-i", "-j", "-r", str(profile_data_pipe[1]), "--"]
 
     command = sys.argv[1:]
 
     ep = EventParser(profile_data_pipe[0])
-
-    print(driver_cmd + command)
 
     sp = subprocess.Popen(driver_cmd + command, pass_fds=[profile_data_pipe[1]])
 

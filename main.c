@@ -46,7 +46,7 @@ int safe_write_fd(int fd, void *buff, size_t len)
 int syscall_cb_out_fd_text(tracee_t tracee,
                            pid_t pid,
                            scall_enter_desc_t *enter,
-                           scall_exit_desc_t* exit,
+                           scall_exit_desc_t *exit,
                            double start_time,
                            double duration,
                            void *stack[],
@@ -60,8 +60,8 @@ int syscall_cb_out_fd_text(tracee_t tracee,
 	char enter_buff[512];
 	scal_print_enter(enter, enter_buff, 512);
 
-    char exit_buff[512];
-    scal_print_exit(exit, exit_buff, 512);
+	char exit_buff[512];
+	scal_print_exit(exit, exit_buff, 512);
 
 
 
@@ -72,11 +72,10 @@ int syscall_cb_out_fd_text(tracee_t tracee,
 	return safe_write_fd(tau_perf_conf_get()->output_fd, buff, strlen(buff) );
 }
 
-
 int syscall_cb_out_fd_json(tracee_t tracee,
                            pid_t pid,
                            scall_enter_desc_t *enter,
-                           scall_exit_desc_t* exit,
+                           scall_exit_desc_t *exit,
                            double start_time,
                            double duration,
                            void *stack[],
@@ -89,26 +88,25 @@ int syscall_cb_out_fd_json(tracee_t tracee,
 
 
 	char scallb[1024];
-    scal_format_json(enter, exit, scallb, 2048);
+	scal_format_json(enter, exit, scallb, 2048);
 
-    char buff[2048];
-    snprintf(buff, 2048, "{ \"start\" : %.17g , \"duration\" : %.17g , \"syscall\" : %s }", start_time, duration, scallb);
+	char buff[2048];
+	snprintf(buff, 2048, "{ \"start\" : %.17g , \"duration\" : %.17g , \"syscall\" : %s }", start_time, duration, scallb);
 
-    /* Note, we write the \0 to ease parsing */
+	/* Note, we write the \0 to ease parsing */
 	return safe_write_fd(tau_perf_conf_get()->output_fd, buff, strlen(buff) + 1);
 }
-
 
 int attach(pid_t pid)
 {
 	tracee_error_t err;
 
-    tracee_callback_t cb = syscall_cb_out_fd_text;
+	tracee_callback_t cb = syscall_cb_out_fd_text;
 
-    if(tau_perf_conf_get()->json)
-    {
-        cb = syscall_cb_out_fd_json;
-    }
+	if(tau_perf_conf_get()->json)
+	{
+		cb = syscall_cb_out_fd_json;
+	}
 
 
 	tracee_t tc = tracee_attach(pid, cb, &err);
@@ -121,7 +119,7 @@ int attach(pid_t pid)
 
 	tracee_track(tc);
 
-    close(tau_perf_conf_get()->output_fd);
+	close(tau_perf_conf_get()->output_fd);
 
 	tracee_detach(tc);
 
@@ -130,14 +128,6 @@ int attach(pid_t pid)
 
 int dofork(char *myargv[])
 {
-	char **a = myargv;
-
-	while(*a)
-	{
-		printf("%s\n", *a);
-		a++;
-	}
-
 	pid_t rpid = fork();
 
 	if(rpid == 0)
@@ -185,6 +175,18 @@ int check_fd(int fd)
 	return 0;
 }
 
+void help(void)
+{
+	printf("perf [-h] [-j] [-o FILE] [-r FD] [-i] [-p PID]\n");
+	printf("\n");
+	printf("-p PID  : attach to PID\n");
+	printf("-o FILE : store output in FILE (not compatible with -r)\n");
+	printf("-r FD   : redirect output to FD (not compatible with -o)\n");
+	printf("-i      : only show 'io' events\n");
+	printf("-j      : use a JSON event output\n");
+	printf("-h      : show this help\n");
+}
+
 int main(int argc, char **argv)
 {
 	char *cpid = NULL;
@@ -193,10 +195,14 @@ int main(int argc, char **argv)
 
 	opterr = 0;
 
-	while( (c = getopt(argc, argv, "ip:r:jo:") ) != -1)
+	while( (c = getopt(argc, argv, "hip:r:jo:") ) != -1)
 	{
 		switch(c)
 		{
+			case 'h':
+				help();
+				return 1;
+
 			case 'i':
 				tau_perf_conf_get()->io_only = 1;
 				break;
@@ -293,7 +299,7 @@ int main(int argc, char **argv)
 		for(i = optind; i < argc; i++)
 		{
 			myargv[cnt] = strdup(argv[i]);
-			printf("%s\n", argv[i]);
+			//printf("%s\n", argv[i]);
 			cnt++;
 		}
 

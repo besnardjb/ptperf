@@ -364,81 +364,79 @@ void scalls_init()
 
 int scall_is_io(int id)
 {
-    switch(id)
-    {
-        case SYS_openat:
-        case SYS_open:
-        case SYS_read:
-        case SYS_write:
-        case SYS_writev:
-        case SYS_stat:
-        case SYS_fstat:
-        case SYS_statfs:
-        case SYS_fstatfs:
-        case SYS_close:
-        case SYS_access:
-            return 1;
-    }
+	switch(id)
+	{
+		case SYS_openat:
+		case SYS_open:
+		case SYS_read:
+		case SYS_write:
+		case SYS_writev:
+		case SYS_stat:
+		case SYS_fstat:
+		case SYS_statfs:
+		case SYS_fstatfs:
+		case SYS_close:
+		case SYS_access:
+			return 1;
+	}
 
-    return 0;
+	return 0;
 }
 
 /**********************
 * ARGUMENTS HANDLING *
 **********************/
 
-static inline int __read_string_from_tracee(pid_t pid, char * src_addr, char * buff, int len)
+static inline int __read_string_from_tracee(pid_t pid, char *src_addr, char *buff, int len)
 {
-    int cnt = 0;
+	int cnt = 0;
 
-    buff[0] = '\0';
+	buff[0] = '\0';
 
-    do
-    {
-        errno = 0;
-        long data = ptrace(PTRACE_PEEKDATA, pid, src_addr + cnt, NULL);
+	do
+	{
+		errno = 0;
+		long data = ptrace(PTRACE_PEEKDATA, pid, src_addr + cnt, NULL);
 
-        if(errno != 0)
-        {
-            perror("ptrace (peekuser)");
-            return -1;
-        }
-
-#if 0
-        fprintf(stderr, "READ %c%c%c%c%c%c%c%c\n", ((char*)&data)[0], ((char*)&data)[1],((char*)&data)[2],((char*)&data)[3], ((char*)&data)[4], ((char*)&data)[5],((char*)&data)[6],((char*)&data)[7]);
-        printf("WRITE @ off %d\n", cnt);
-#endif
-
-        memcpy(&buff[cnt], &data, sizeof(long));
-
-        if(memchr(&data, 0, sizeof(long)))
-        {
-            break;
-        }
-
-        cnt+=sizeof(long);
-
-        if((len - sizeof(long)) < cnt)
-        {
-            break;
-        }
-    }while(1);
+		if(errno != 0)
+		{
+			perror("ptrace (peekuser)");
+			return -1;
+		}
 
 #if 0
-    char *c = buff;
+		fprintf(stderr, "READ %c%c%c%c%c%c%c%c\n", ( (char *)&data)[0], ( (char *)&data)[1], ( (char *)&data)[2], ( (char *)&data)[3], ( (char *)&data)[4], ( (char *)&data)[5], ( (char *)&data)[6], ( (char *)&data)[7]);
+		printf("WRITE @ off %d\n", cnt);
+#endif
 
-    while(*c)
-    {
-        printf("--> %c\n", *c);
-        c++;
-    }
+		memcpy(&buff[cnt], &data, sizeof(long) );
+
+		if(memchr(&data, 0, sizeof(long) ) )
+		{
+			break;
+		}
+
+		cnt += sizeof(long);
+
+		if( (len - sizeof(long) ) < cnt)
+		{
+			break;
+		}
+	} while(1);
+
+#if 0
+	char *c = buff;
+
+	while(*c)
+	{
+		printf("--> %c\n", *c);
+		c++;
+	}
 #endif
 
 
-    return 0;
+	return 0;
 }
-
-
 
 scall_enter_desc_t *scal_decode_enter(pid_t pid)
 {
@@ -463,22 +461,24 @@ scall_enter_desc_t *scal_decode_enter(pid_t pid)
 	switch(ret->scall_id)
 	{
 		case SYS_open:
-            if( __read_string_from_tracee(pid, (void*)regs.rdi, ret->args.open.fname, 512) < 0 )
-            {
-                goto ENTER_SCL_ERR;
-            }
+			if(__read_string_from_tracee(pid, (void *)regs.rdi, ret->args.open.fname, 512) < 0)
+			{
+				goto ENTER_SCL_ERR;
+			}
 			ret->args.open.flags = regs.rsi;
-			ret->args.open.mode = regs.rdx;
-        break;
+			ret->args.open.mode  = regs.rdx;
+			break;
+
 		case SYS_openat:
 			ret->args.openat.dfd = regs.rdi;
-            if( __read_string_from_tracee(pid, (void*)regs.rsi, ret->args.openat.fname, 512) < 0 )
-            {
-                goto ENTER_SCL_ERR;
-            }
+			if(__read_string_from_tracee(pid, (void *)regs.rsi, ret->args.openat.fname, 512) < 0)
+			{
+				goto ENTER_SCL_ERR;
+			}
 			ret->args.openat.flags = regs.rdx;
-			ret->args.openat.mode = regs.r10;
-        break;
+			ret->args.openat.mode  = regs.r10;
+			break;
+
 		case SYS_read:
 		case SYS_write:
 			ret->args.read_write.fd    = regs.rdi;
@@ -486,27 +486,29 @@ scall_enter_desc_t *scal_decode_enter(pid_t pid)
 			ret->args.read_write.count = regs.rdx;
 			break;
 
-        case SYS_access:
-            if( __read_string_from_tracee(pid, (void*)regs.rdi, ret->args.access.fname, 512) < 0 )
-            {
-                goto ENTER_SCL_ERR;
-            }
-            ret->args.access.mode = regs.rsi;
-        break;
+		case SYS_access:
+			if(__read_string_from_tracee(pid, (void *)regs.rdi, ret->args.access.fname, 512) < 0)
+			{
+				goto ENTER_SCL_ERR;
+			}
+			ret->args.access.mode = regs.rsi;
+			break;
 
-        case SYS_stat:
-        case SYS_statfs:
-            if( __read_string_from_tracee(pid, (void*)regs.rdi, ret->args.stat.fname, 512) < 0 )
-            {
-                goto ENTER_SCL_ERR;
-            }
-            ret->args.stat.statbuf  = (void *)regs.rsi;
-            break;
-        case SYS_fstat:
-        case SYS_fstatfs:
-            ret->args.fstat.fd = regs.rdi;
-            ret->args.fstat.statbuf  = (void *)regs.rsi;
-            break;
+		case SYS_stat:
+		case SYS_statfs:
+			if(__read_string_from_tracee(pid, (void *)regs.rdi, ret->args.stat.fname, 512) < 0)
+			{
+				goto ENTER_SCL_ERR;
+			}
+			ret->args.stat.statbuf = (void *)regs.rsi;
+			break;
+
+		case SYS_fstat:
+		case SYS_fstatfs:
+			ret->args.fstat.fd      = regs.rdi;
+			ret->args.fstat.statbuf = (void *)regs.rsi;
+			break;
+
 		case SYS_fsync:
 		case SYS_dup:
 		case SYS_fdatasync:
@@ -525,8 +527,8 @@ scall_enter_desc_t *scal_decode_enter(pid_t pid)
 	return ret;
 
 ENTER_SCL_ERR:
-    scal_free_enter(ret);
-    return NULL;
+	scal_free_enter(ret);
+	return NULL;
 }
 
 char *scal_print_enter(scall_enter_desc_t *enter, char *buff, int size)
@@ -535,13 +537,14 @@ char *scal_print_enter(scall_enter_desc_t *enter, char *buff, int size)
 	{
 		case SYS_open:
 			snprintf(buff, size, "[open](path=%s , flag=%d, mode=%d)", enter->args.open.fname, enter->args.open.flags, enter->args.open.mode);
-        break;
+			break;
+
 		case SYS_openat:
 			snprintf(buff, size, "[openat](dfd=%d, path=%s , flag=%d, mode=%d)", enter->args.openat.dfd,
-                                                                                 enter->args.openat.fname,
-                                                                                 enter->args.openat.flags,
-                                                                                 enter->args.openat.mode);
-        break;
+			         enter->args.openat.fname,
+			         enter->args.openat.flags,
+			         enter->args.openat.mode);
+			break;
 
 		case SYS_read:
 		case SYS_write:
@@ -550,19 +553,19 @@ char *scal_print_enter(scall_enter_desc_t *enter, char *buff, int size)
 			         enter->args.read_write.count);
 			break;
 
-        case SYS_access:
+		case SYS_access:
 			snprintf(buff, size, "[access](path=%s , mode=%d)", enter->args.access.fname, enter->args.access.mode);
-        break;
+			break;
 
-        case SYS_stat:
-        case SYS_statfs:
+		case SYS_stat:
+		case SYS_statfs:
 			snprintf(buff, size, "[%s](path=%s , buff=%p)", scall_name(enter->scall_id), enter->args.stat.fname, enter->args.stat.statbuf);
-        break;
+			break;
 
-        case SYS_fstat:
-        case SYS_fstatfs:
+		case SYS_fstat:
+		case SYS_fstatfs:
 			snprintf(buff, size, "[%s](fd=%d , buff=%p)", scall_name(enter->scall_id), enter->args.fstat.fd, enter->args.fstat.statbuf);
-        break;
+			break;
 
 		case SYS_fsync:
 		case SYS_fdatasync:
@@ -588,17 +591,18 @@ char *scal_print_enter(scall_enter_desc_t *enter, char *buff, int size)
 
 char *scal_json_enter(scall_enter_desc_t *enter, char *buff, int size)
 {
-switch(enter->scall_id)
+	switch(enter->scall_id)
 	{
 		case SYS_open:
 			snprintf(buff, size, "\"args\" : { \"path\": \"%s\" , \"flag\": %d, \"mode\": %d }", enter->args.open.fname, enter->args.open.flags, enter->args.open.mode);
-        break;
+			break;
+
 		case SYS_openat:
 			snprintf(buff, size, "\"args\" : {\"dfd\":%d, \"path\":\"%s\" , \"flag\":%d, \"mode\":%d}", enter->args.openat.dfd,
-                                                                                 enter->args.openat.fname,
-                                                                                 enter->args.openat.flags,
-                                                                                 enter->args.openat.mode);
-        break;
+			         enter->args.openat.fname,
+			         enter->args.openat.flags,
+			         enter->args.openat.mode);
+			break;
 
 		case SYS_read:
 		case SYS_write:
@@ -607,19 +611,19 @@ switch(enter->scall_id)
 			         enter->args.read_write.count);
 			break;
 
-        case SYS_access:
+		case SYS_access:
 			snprintf(buff, size, "\"args\" : {\"path\":\"%s\" , \"mode\":%d}", enter->args.access.fname, enter->args.access.mode);
-        break;
+			break;
 
-        case SYS_stat:
-        case SYS_statfs:
+		case SYS_stat:
+		case SYS_statfs:
 			snprintf(buff, size, "\"args\" : {\"path\":\"%s\" , \"buff\":\"%p\"}", enter->args.stat.fname, enter->args.stat.statbuf);
-        break;
+			break;
 
-        case SYS_fstat:
-        case SYS_fstatfs:
+		case SYS_fstat:
+		case SYS_fstatfs:
 			snprintf(buff, size, "\"args\" : {\"fd\":%d , \"buff\":\"%p\"}", enter->args.fstat.fd, enter->args.fstat.statbuf);
-        break;
+			break;
 
 		case SYS_fsync:
 		case SYS_fdatasync:
@@ -636,7 +640,7 @@ switch(enter->scall_id)
 			break;
 
 		default:
-			snprintf(buff, size, "\"args\":{}" );
+			snprintf(buff, size, "\"args\":{}");
 	}
 
 	return buff;
@@ -650,8 +654,8 @@ int scal_free_enter(scall_enter_desc_t *enter)
 }
 
 /***************
- * EXIT DECODE *
- ***************/
+* EXIT DECODE *
+***************/
 
 
 scall_exit_desc_t *scal_decode_exit(pid_t pid, int syscall)
@@ -680,16 +684,17 @@ scall_exit_desc_t *scal_decode_exit(pid_t pid, int syscall)
 		case SYS_read:
 		case SYS_write:
 			ret->args.ssizet.s = regs.rax;
-		break;
-        case SYS_fstat:
-        case SYS_fstatfs:
-        case SYS_stat:
-        case SYS_statfs:
+			break;
+
+		case SYS_fstat:
+		case SYS_fstatfs:
+		case SYS_stat:
+		case SYS_statfs:
 		case SYS_open:
 		case SYS_close:
 		case SYS_openat:
 			ret->args.oneint.i = regs.rax;
-		break;
+			break;
 	}
 
 
@@ -709,19 +714,21 @@ char *scal_print_exit(scall_exit_desc_t *dexit, char *buff, int size)
 		case SYS_read:
 		case SYS_write:
 			snprintf(buff, size, "[RET (int) %ld]", dexit->args.ssizet.s);
-		break;
-        case SYS_fstat:
-        case SYS_fstatfs:
-        case SYS_stat:
-        case SYS_statfs:
+			break;
+
+		case SYS_fstat:
+		case SYS_fstatfs:
+		case SYS_stat:
+		case SYS_statfs:
 		case SYS_open:
 		case SYS_close:
 		case SYS_openat:
 			snprintf(buff, size, "[RET (int) %d]", dexit->args.oneint.i);
-		break;
+			break;
+
 		default:
 			snprintf(buff, size, "[RET ??]");
-		break;
+			break;
 	}
 
 	return buff;
@@ -734,34 +741,36 @@ char *scal_json_exit(scall_exit_desc_t *dexit, char *buff, int size)
 		case SYS_read:
 		case SYS_write:
 			snprintf(buff, size, " \"ret\": %ld", dexit->args.ssizet.s);
-		break;
-        case SYS_fstat:
-        case SYS_fstatfs:
-        case SYS_stat:
-        case SYS_statfs:
+			break;
+
+		case SYS_fstat:
+		case SYS_fstatfs:
+		case SYS_stat:
+		case SYS_statfs:
 		case SYS_open:
 		case SYS_close:
 		case SYS_openat:
 			snprintf(buff, size, " \"ret\" : %d", dexit->args.oneint.i);
-		break;
+			break;
+
 		default:
 			snprintf(buff, size, "\"ret\": null");
-		break;
+			break;
 	}
 
 	return buff;
 }
 
-
 /******************
- * JSON FORMATING *
- ******************/
+* JSON FORMATING *
+******************/
 
 
 
-char * scal_format_json(scall_enter_desc_t * enter, scall_exit_desc_t * dexit, char *buf, int len)
+char *scal_format_json(scall_enter_desc_t *enter, scall_exit_desc_t *dexit, char *buf, int len)
 {
 	char enter_buff[1024];
+
 	scal_json_enter(enter, enter_buff, 1024);
 
 	char exit_buff[128];

@@ -2,6 +2,10 @@
 
 Demonstrace PTRACE attaching to follow syscalls on a target program with focus on IO
 
+## Warning
+
+**Tested only on Linux x86_64 for now.**
+
 ## Usage
 
 ```

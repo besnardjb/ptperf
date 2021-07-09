@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-O3 -Wall
-LDFLAGS=-lunwind -lpthread
+LDFLAGS=t -lpthread
 
 
 TARGETS=perf

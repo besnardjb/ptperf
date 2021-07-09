@@ -40,9 +40,9 @@ class EventParser():
         self.files["stdout"] = File("stdout")
         self.files["stderr"] = File("stderr")
         self.files["stdin"] = File("stdin")
-        self.fds["0"] = self.files["stdin"]
-        self.fds["1"] = self.files["stdout"]
-        self.fds["2"] = self.files["stderr"]
+        self.fds[0] = self.files["stdin"]
+        self.fds[1] = self.files["stdout"]
+        self.fds[2] = self.files["stderr"]
 
     def _read_one_event(self):
         data = bytearray()

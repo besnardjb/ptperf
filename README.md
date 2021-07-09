@@ -61,7 +61,7 @@ Outputs:
 cat/proc/self/cmdline
 [stdout]
     READ  : 0 operations for 0 bytes
-    WRITE : 0 operations for 0 bytes
+    WRITE : 1 operations for 23 bytes
 [stderr]
     READ  : 0 operations for 0 bytes
     WRITE : 0 operations for 0 bytes
